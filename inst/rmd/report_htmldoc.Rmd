@@ -1,0 +1,357 @@
+---
+title: "`r params$report_title`"
+output: 
+  html_document:
+    df_print: paged
+params:
+  source_data: source_data
+  aggregated_data: aggregated_data
+  report_title: report_title
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(comment = NA)
+knitr::opts_chunk$set(rownames.print = FALSE)
+```
+
+```{css, echo=FALSE}
+h1.title {
+	font-size: 28px;
+	}
+p.compact {
+	margin-bottom: 0px;
+	margin-top: 0px;
+	}
+```
+
+<p class="compact">
+Dataset: **`r encodeString(params$source_data$dataset_description)`**
+</p>
+
+<p class="compact">
+Aggregated by: **`r params$aggregated_data$aggregation_timeunit`**
+</p>
+
+<p class="compact">
+Report created on: `r Sys.time()`; daiquiri version `r utils::packageVersion(utils::packageName())`; `r R.Version()$version.string`
+</p>
+
+# {.tabset .tabset-pills}
+
+## Source data {.tabset}
+
+
+```{r source_data}
+sourcesummary <- summarise_source_data(params$source_data,
+  show_progress = FALSE
+)
+source_data_fields <- sourcesummary$data_fields
+source_data_fields$ordinal_position <- seq.int(nrow(source_data_fields))
+```
+
+### Data fields imported
+
+```{r fields-imported}
+
+reactable::reactable(
+  # NOTE: trimws() needed as summarise_source_data() is optimised for console printout
+  source_data_fields[
+    which(trimws(sourcesummary$data_fields$field_type) != "ignore"),
+  ],
+  sortable = TRUE,
+  filterable = FALSE,
+  searchable = FALSE,
+  rownames = FALSE,
+  pagination = FALSE,
+  striped = TRUE,
+  highlight = TRUE,
+  columns = list(
+    field_name = reactable::colDef(
+      name = "Field name",
+      style = list(fontWeight = "bold")
+    ),
+    field_type = reactable::colDef(name = "Field type"),
+    datatype = reactable::colDef(show = FALSE),
+    count = reactable::colDef(name = "Total values"),
+    missing = reactable::colDef(name = "Missing values"),
+    min = reactable::colDef(name = "Min value"),
+    max = reactable::colDef(name = "Max value"),
+    validation_warnings = reactable::colDef(name = "Validation warnings"),
+    ordinal_position = reactable::colDef(name = "Column position")
+  )
+)
+```
+
+
+### Data fields ignored
+
+```{r fields-ignored}
+
+reactable::reactable(
+  # NOTE: trimws() needed as summarise_source_data() is optimised for console printout
+  source_data_fields[
+    which(trimws(sourcesummary$data_fields$field_type) == "ignore"),
+    c("field_name", "field_type", "ordinal_position")
+  ],
+  sortable = TRUE,
+  filterable = FALSE,
+  searchable = FALSE,
+  pagination = FALSE,
+  rownames = FALSE,
+  compact = TRUE,
+  fullWidth = FALSE,
+  columns = list(
+    field_name = reactable::colDef(
+      name = "Field name",
+      minWidth = 200
+    ),
+    field_type = reactable::colDef(
+      name = "Field type",
+      minWidth = 100
+    ),
+    ordinal_position = reactable::colDef(name = "Column position")
+  )
+)
+```
+
+
+### Validation warnings
+
+```{r validation-warnings}
+
+reactable::reactable(
+  sourcesummary$validation_warnings,
+  sortable = TRUE,
+  filterable = FALSE,
+  searchable = FALSE,
+  rownames = FALSE,
+  pagination = FALSE,
+  striped = TRUE,
+  highlight = TRUE,
+  compact = TRUE,
+  fullWidth = FALSE,
+  columns = list(
+    field_name = reactable::colDef(
+      name = "Field name",
+      style = list(fontWeight = "bold"),
+      minWidth = 200
+    ),
+    message = reactable::colDef(
+      name = "Details",
+      minWidth = 500
+    ),
+    instances = reactable::colDef(name = "Instances")
+  )
+)
+```
+
+### Summary
+
+```{r source_data-summary}
+
+summarydf <- data.frame(
+  "Item" = c(
+    "Columns in source",
+    "Columns imported",
+    "Column used for timepoint",
+    "Min timepoint value",
+    "Max timepoint value",
+    "Rows in source",
+    "Duplicate rows",
+    "Rows missing timepoint values",
+    "Rows imported",
+    "Strings interpreted as missing values",
+    "Total validation warnings"
+  ),
+  "Value" = c(
+    sourcesummary$overall["cols_source_n"],
+    sourcesummary$overall["cols_imported_n"],
+    sourcesummary$overall["timepoint_field_name"],
+    sourcesummary$overall["timepoint_min"],
+    sourcesummary$overall["timepoint_max"],
+    sourcesummary$overall["rows_source_n"],
+    sourcesummary$overall["rows_duplicates_n"],
+    sourcesummary$overall["timepoint_missing_n"],
+    sourcesummary$overall["rows_imported_n"],
+    sourcesummary$overall["na_values"],
+    sum(sourcesummary$validation_warnings$instances, na.rm = TRUE) +
+      sum(is.na(
+        sourcesummary$validation_warnings$instances
+      ))
+  ),
+  stringsAsFactors = FALSE
+)
+
+reactable::reactable(
+  summarydf,
+  sortable = FALSE,
+  filterable = FALSE,
+  searchable = FALSE,
+  pagination = FALSE,
+  rownames = FALSE,
+  striped = TRUE,
+  compact = TRUE,
+  fullWidth = FALSE,
+  columns = list(
+    Item = reactable::colDef(
+      name = "",
+      style = list(fontWeight = "bold"),
+      minWidth = 300
+    ),
+    Value = reactable::colDef(
+      name = "",
+      minWidth = 200
+    )
+  )
+)
+```
+
+
+## Aggregated data {.tabset}
+
+
+```{r aggregated_data}
+aggsummary <- summarise_aggregated_data(params$aggregated_data)
+```
+
+
+### Values present
+
+```{r overview-presence}
+
+plot_overview_combo_static(
+  agg_fields = params$aggregated_data$aggregated_fields,
+  agg_fun = "n",
+  lineplot_field_name = params$aggregated_data$timepoint_field_name,
+  lineplot_fill_colour = "pink",
+  heatmap_fill_colour = "darkred",
+  title = paste("Records per", params$aggregated_data$aggregation_timeunit)
+)
+```
+
+### Missing values
+
+```{r overview-missing}
+
+plot_overview_combo_static(
+  agg_fields = params$aggregated_data$aggregated_fields,
+  agg_fun = "missing_n",
+  lineplot_field_name = "[ALL_FIELDS_COMBINED]",
+  lineplot_fill_colour = "lightblue",
+  heatmap_fill_colour = "darkblue",
+  title = paste(
+    "Total missing values per",
+    params$aggregated_data$aggregation_timeunit
+  )
+)
+```
+
+### Non-conformant values
+
+```{r overview-nonconformant}
+
+plot_overview_combo_static(
+  agg_fields = params$aggregated_data$aggregated_fields,
+  agg_fun = "nonconformant_n",
+  lineplot_field_name = "[ALL_FIELDS_COMBINED]",
+  lineplot_fill_colour = "lightgreen",
+  heatmap_fill_colour = "darkgreen",
+  title = paste(
+    "Total nonconformant values per",
+    params$aggregated_data$aggregation_timeunit
+  )
+)
+```
+
+### Duplicate records
+
+```{r overview-duplicates}
+
+plot_overview_totals_static(
+  agg_field = params$aggregated_data$aggregated_fields[["[DUPLICATES]"]],
+  agg_fun = "sum",
+  fill_colour = "yellow",
+  title = paste(
+    "Total duplicate records per",
+    params$aggregated_data$aggregation_timeunit
+  )
+)
+```
+
+### Summary
+
+```{r aggregated_data-summary}
+
+aggsummarydf <- data.frame(
+  "Item" = c(
+    "Column used for timepoint",
+    "Min timepoint value",
+    "Max timepoint value",
+    "Timepoint aggregation unit",
+    "Total number of timepoints",
+    "Number of empty timepoints",
+    "Number of data fields"
+  ),
+  "Value" = c(
+    aggsummary$overall["timepoint_field_name"],
+    aggsummary$overall["timepoint_min"],
+    aggsummary$overall["timepoint_max"],
+    aggsummary$overall["aggregation_timeunit"],
+    aggsummary$overall["n_timepoints"],
+    aggsummary$overall["n_empty_timepoints"],
+    aggsummary$overall["n_fields"]
+  ),
+  stringsAsFactors = FALSE
+)
+
+reactable::reactable(
+  aggsummarydf,
+  sortable = FALSE,
+  filterable = FALSE,
+  searchable = FALSE,
+  pagination = FALSE,
+  rownames = FALSE,
+  striped = TRUE,
+  compact = TRUE,
+  fullWidth = FALSE,
+  columns = list(
+    Item = reactable::colDef(
+      name = "",
+      style = list(fontWeight = "bold"),
+      minWidth = 300
+    ),
+    Value = reactable::colDef(
+      name = "",
+      minWidth = 200
+    )
+  )
+)
+```
+
+## Individual data fields {.tabset}
+
+```{r individual-fields, results = 'asis'}
+for (i in seq_along(names(params$aggregated_data$aggregated_fields))) {
+  cat(
+    "\n###",
+    names(params$aggregated_data$aggregated_fields)[i],
+    " {.tabset}\n"
+  )
+  agg_funs <-
+    names(params$aggregated_data$aggregated_fields[[i]]$values)[-1]
+  for (agg_fun in agg_funs) {
+    cat("\n####", agg_fun_friendly_name(agg_fun, "short"), "\n")
+    p <-
+      plot_timeseries_static(
+        agg_field = params$aggregated_data$aggregated_fields[[i]],
+        agg_fun = agg_fun
+      )
+
+    print(p)
+    cat("\n")
+  }
+}
+```
+
