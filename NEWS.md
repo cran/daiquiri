@@ -1,6 +1,10 @@
-# daiquiri 1.0.1 (2022-11-09)
+# daiquiri 1.0.2 (2022-11-21)
 
-Initial submission to CRAN
+* When rendering reports, intermediate files are now written to `tempdir()` instead of to the directory of the `report_htmldoc.Rmd` file (the default behaviour of `rmarkdown::render()`). This fixes errors caused when the library location is read-only.
+
+# daiquiri 1.0.1 (2022-11-11)
+
+First release to CRAN
 
 * Replaced calls to deprecated function `aes_string()` in `ggplot2`
 

@@ -1,7 +1,7 @@
 Package: daiquiri
 Type: Package
 Title: Data Quality Reporting for Temporal Datasets
-Version: 1.0.1
+Version: 1.0.2
 Authors@R: c(
     person(c("T.", "Phuong"), "Quan", email = "phuong.quan@ndm.ox.ac.uk",
         role = c("aut", "cre"), comment = c(ORCID = "0000-0001-8566-1817")),
@@ -34,7 +34,7 @@ Suggests: covr, knitr, testthat (>= 3.0.0), codemetar
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 NeedsCompilation: no
-Packaged: 2022-11-11 10:56:41 UTC; pquan
+Packaged: 2022-11-21 14:49:38 UTC; pquan
 Author: T. Phuong Quan [aut, cre] (<https://orcid.org/0000-0001-8566-1817>),
   Jack Cregan [ctb],
   University of Oxford [cph],
@@ -42,4 +42,4 @@ Author: T. Phuong Quan [aut, cre] (<https://orcid.org/0000-0001-8566-1817>),
   Brad Cannell [rev]
 Maintainer: T. Phuong Quan <phuong.quan@ndm.ox.ac.uk>
 Repository: CRAN
-Date/Publication: 2022-11-11 15:30:02 UTC
+Date/Publication: 2022-11-21 15:40:02 UTC

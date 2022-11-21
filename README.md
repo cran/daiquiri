@@ -5,12 +5,16 @@
 
 <!-- badges: start -->
 
+[![CRAN
+Status](https://www.r-pkg.org/badges/version/daiquiri)](https://cran.r-project.org/package=daiquiri)
 [![R-CMD-check](https://github.com/ropensci/daiquiri/workflows/R-CMD-check/badge.svg)](https://github.com/ropensci/daiquiri/actions)
 [![Codecov test
 coverage](https://codecov.io/gh/ropensci/daiquiri/branch/master/graph/badge.svg)](https://app.codecov.io/gh/ropensci/daiquiri?branch=master)
 [![Project Status: Active – The project has reached a stable, usable
 state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![Status at rOpenSci Software Peer
+Review](https://badges.ropensci.org/535_status.svg)](https://github.com/ropensci/software-review/issues/535)
 <!-- badges: end -->
 
 The daiquiri package generates data quality reports that enable quick
@@ -70,11 +74,11 @@ trust in the scientific process.
 
 ## Installation
 
-The intention is to make daiquiri available in CRAN but until then, you
-can install the current development version from the
-[r-universe](https://r-universe.dev/):
-
 ``` r
+# install the latest release from CRAN
+install.packages("daiquiri")
+
+# or install the development version from rOpenSci
 install.packages("daiquiri", repos = "https://ropensci.r-universe.dev")
 ```
 
