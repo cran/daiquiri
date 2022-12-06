@@ -1,6 +1,20 @@
+# daiquiri (development version)
+
+## Bug fixes and minor improvements
+
+* Validation warnings now match column names correctly when `field_types` are specified in a different order to the supplied data frame columns
+
+* Passing in a data frame containing integer columns no longer causes an aggregation error (#9)
+
+* Calling functions with package prefix no longer causes an error (#10)
+
+* Fixed (some) errors about duplicate chunk labels when running package from within rmarkdown/quarto (rmd/qmd) files (bug introduced in previous release 1.0.2). This now allows chunks in the parent file to be unlabelled but unfortunately still errors when there is a chunk labelled `setup`. (#7)
+
+
 # daiquiri 1.0.2 (2022-11-21)
 
 * When rendering reports, intermediate files are now written to `tempdir()` instead of to the directory of the `report_htmldoc.Rmd` file (the default behaviour of `rmarkdown::render()`). This fixes errors caused when the library location is read-only.
+
 
 # daiquiri 1.0.1 (2022-11-11)
 

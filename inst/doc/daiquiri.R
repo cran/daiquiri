@@ -34,6 +34,24 @@ fts <- field_types(
   Location = ft_categorical(aggregate_by_each_category = TRUE)
 )
 
+## ---- include=FALSE-----------------------------------------------------------
+# quietly test can create the report from an rmd but show the code in the next chunk in the vignette
+daiq_obj <- daiquiri_report(
+  df = example_prescriptions,
+  field_types = fts,
+  override_column_names = FALSE,
+  na = c("", "NULL"),
+  dataset_description = "Example prescription data",
+  aggregation_timeunit = "day",
+  report_title = "daiquiri data quality report",
+  save_directory = tempdir(),
+  save_filename = "example_prescriptions_report",
+  show_progress = FALSE,
+  log_directory = NULL
+)
+# clean up
+file.remove(daiq_obj$report_filename)
+
 ## ---- eval=FALSE--------------------------------------------------------------
 #  daiq_obj <- daiquiri_report(
 #    df = example_prescriptions,
