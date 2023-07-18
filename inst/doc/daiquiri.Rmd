@@ -12,6 +12,13 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+
+# show all columns when printing tibbles
+options(tibble.width = Inf)
+
+# restrict threads for CRAN compliance
+dt_threads <- data.table::getDTthreads()
+data.table::setDTthreads(1)
 ```
 
 This vignette demonstrates how to use this package to generate an html report that allows you to quickly review any changes in a temporal dataset’s values over time.
@@ -38,7 +45,7 @@ The `example_prescriptions` dataset is provided with this package as a csv file,
 * PatientID - A unique identifier for the patient
 * Location - The location of the patient
 
-There are some missing values which are represented by the string 'NULL'. String values that should be treated as missing values can be specified when the data is processed, using the `na` parameter.
+There are some missing values which are represented by the string 'NULL' and some dates with the value '1800-01-01'. String values that should be treated as missing values can be specified  using the `na` parameter, either per column or for the entire dataset. 
 
 ```{r}
 # first, attach the package if you haven't already
@@ -66,7 +73,7 @@ One and only one column must be chosen to be the "timepoint" field (though you c
 
 Here is a list of the possible field types for the columns. Different time series will be generated depending on the type of field. All types will have time series generated for the number of values present, as well as the number and percentage of missing values.
 
-* `ft_timepoint()` - identifies the data field which should be used as the independent time variable (and will form the x-axis of any time series plots). There should be one and only one of these specified. By default, time series will also be created for the number and percentage of values which do not contain a time portion, though this can be switched off if the `includes_time` parameter is set to `FALSE` (e.g. if you already know in advance that there are no time portions in any of the values). NOTE: Time series' are not created for missing values as they cannot be assigned to a date. Instead, the total number of missing values is included in the summary table.
+* `ft_timepoint()` - identifies the data field which should be used as the independent time variable (and will form the x-axis of any time series plots). There should be one and only one of these specified. The number of values present in this field is equivalent to the number of records in the data set (after duplicates have been removed). By default, time series will also be created for the number and percentage of values which do not contain a time portion, though this can be switched off if the `includes_time` parameter is set to `FALSE` (e.g. if you already know in advance that there are no time portions in any of the values). NOTE: Time series' are not created for missing values as they cannot be assigned to a date. Instead, the total number of missing values is included in the summary table.
 * `ft_uniqueidentifier()` - identifies data fields which contain a (usually computer-generated) identifier for an entity, e.g. a patient. It does not need to be unique within the dataset. Values are treated as strings, with additional time series created for min_length, max_length, and mean_length of the string.
 * `ft_categorical()` - identifies data fields which should be treated as categorical. Values are treated as strings. Additional time series are created for the number of "distinct" values, and if the `aggregate_by_each_category` parameter is set to `TRUE`, further time series will be created for the number and percentage of values within each distinct subcategory value.
 * `ft_numeric()` - identifies data fields which contain numeric values that should be treated as continuous. Additional time series are created for the min, max, mean, and median value, and and the number and percentage of non-conformant values.
@@ -78,7 +85,7 @@ Here is a list of the possible field types for the columns. Different time serie
 Lastly, a number of time series will be generated for the dataset as a whole, namely:
 
 * The number and percentage presence of duplicate records (i.e. where the entire row is the same as another row in the dataset)
-* The number of records (after duplicates have been removed)
+* The total number of values present across all data fields
 * The total number and percentage of missing and of non-conformant values (where relevant) across all data fields
 
 NOTES:
@@ -96,7 +103,7 @@ For the `example_prescriptions` dataset above, we will use the PrescriptionDate 
 fts <- field_types(
   PrescriptionID = ft_uniqueidentifier(),
   PrescriptionDate = ft_timepoint(),
-  AdmissionDate = ft_datetime(includes_time = FALSE),
+  AdmissionDate = ft_datetime(includes_time = FALSE, na = "1800-01-01"),
   Drug = ft_freetext(),
   Dose = ft_numeric(),
   DoseUnit = ft_categorical(),
@@ -179,9 +186,63 @@ This contains child tabs which display plots showing overall numbers of records,
 
 ### Individual data fields
 
-This contains two levels of child tabs. The first level consists of one tab per data field in the dataset. Within each data field tab, there is a further set of child tabs displaying a plot for each time series created
+This contains two levels of child tabs. The first level consists of one tab per data field in the dataset. Within each data field tab, there is a further set of child tabs displaying a plot for each time series created.
 
 <img src="../man/figures/example_prescriptions_allfields_missing_perc.png" width="500" />
+
+
+## Creating a stratified report
+
+When the data consists of records from a number of distinct sources (e.g. different hospital sites), or can be partitioned in another meaningful way (e.g. elective versus emergency hospital admissions), you can create a stratified report which allows you to inspect the data within each of the subcategories alongside each other.
+
+**Example:**
+
+For the same `example_prescriptions` dataset above, we can specify that we want to stratify the report according to hospital site, by setting the Location field to the `ft_strata()` field type:
+
+```{r}
+fts <- field_types(
+  PrescriptionID = ft_uniqueidentifier(),
+  PrescriptionDate = ft_timepoint(),
+  AdmissionDate = ft_datetime(includes_time = FALSE, na = "1800-01-01"),
+  Drug = ft_freetext(),
+  Dose = ft_numeric(),
+  DoseUnit = ft_categorical(),
+  PatientID = ft_ignore(),
+  Location = ft_strata()
+)
+```
+
+Then we can create a report the same way as usual.
+
+```{r, eval=FALSE}
+daiq_obj <- daiquiri_report(
+  df = example_prescriptions,
+  field_types = fts,
+  override_column_names = FALSE,
+  na = c("", "NULL"),
+  dataset_description = "Example prescription data",
+  aggregation_timeunit = "day",
+  report_title = "daiquiri data quality report - stratified",
+  save_directory = ".",
+  save_filename = "example_prescriptions_report_stratified",
+  show_progress = TRUE,
+  log_directory = NULL
+)
+```
+
+
+### Aggregated data
+
+In the Strata tab, you can see the number and the percentage of records belonging to each stratum over time. Also, the tabs for Values present, Missing values, and Non-conformant values, are further split into child tabs - one covering the whole dataset plus one for each stratum.
+
+<img src="../man/figures/example_prescriptions_stratified_strata.png" width="500" />
+
+### Individual data fields
+
+These tabs now show multiple time series aligned into a single plot, one time series covering all the records plus one for each stratum.
+
+<img src="../man/figures/example_prescriptions_stratified_midnight_perc.png" width="500" />
+
 
 ## Advanced usage details
 
@@ -225,6 +286,10 @@ report_data(
 )
 ```
 
+```{r, include = FALSE}
+# restore thread setting
+data.table::setDTthreads(dt_threads)
+```
 
 
 

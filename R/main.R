@@ -54,7 +54,7 @@
 #'   field_types = field_types(
 #'     PrescriptionID = ft_uniqueidentifier(),
 #'     PrescriptionDate = ft_timepoint(),
-#'     AdmissionDate = ft_datetime(includes_time = FALSE),
+#'     AdmissionDate = ft_datetime(includes_time = FALSE, na = "1800-01-01"),
 #'     Drug = ft_freetext(),
 #'     Dose = ft_numeric(),
 #'     DoseUnit = ft_categorical(),
@@ -167,6 +167,7 @@ daiquiri_report <- function(df,
 print.daiquiri_object <- function(x, ...) {
   cat("Class: daiquiri_object\n")
   cat("Dataset:", x$source_data$dataset_description, "\n")
+  cat("Saved to:", x$report_filename, "\n")
   cat("\n")
   cat("Columns in source:", x$source_data$cols_source_n, "\n")
   cat("Columns imported:", x$source_data$cols_imported_n, "\n")

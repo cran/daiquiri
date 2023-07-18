@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# daiquiri
+# daiquiri <img src="man/figures/logo.png" align="right" height="134"/>
 
 <!-- badges: start -->
 
@@ -15,6 +15,8 @@ state and is being actively
 developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![Status at rOpenSci Software Peer
 Review](https://badges.ropensci.org/535_status.svg)](https://github.com/ropensci/software-review/issues/535)
+[![JOSS
+paper](https://joss.theoj.org/papers/10.21105/joss.05034/status.svg)](https://doi.org/10.21105/joss.05034)
 <!-- badges: end -->
 
 The daiquiri package generates data quality reports that enable quick
@@ -101,12 +103,12 @@ head(raw_data)
     ## # A tibble: 6 × 8
     ##   PrescriptionID PrescriptionDate    Admis…¹ Drug  Dose  DoseU…² Patie…³ Locat…⁴
     ##   <chr>          <chr>               <chr>   <chr> <chr> <chr>   <chr>   <chr>  
-    ## 1 6000           2021-01-01 00:00:00 2020-1… Ceft… 500   mg      4993679 SITE1  
+    ## 1 6000           2021-01-01 00:00:00 2020-1… Ceft… 500   mg      4993679 SITE3  
     ## 2 6001           NULL                2020-1… Fluc… 1000  mg      819452  SITE1  
-    ## 3 6002           NULL                2020-1… Teic… 400   mg      275597  SITE1  
-    ## 4 6003           2021-01-01 01:00:00 2020-1… Fluc… 1000  NULL    819452  SITE1  
-    ## 5 6004           2021-01-01 02:00:00 2020-1… Fluc… 1000  NULL    528071  SITE1  
-    ## 6 6005           2021-01-01 03:00:00 2020-1… Co-a… 1.2   g       1001434 SITE1  
+    ## 3 6002           NULL                2020-1… Teic… 400   mg      275597  SITE2  
+    ## 4 6003           2021-01-01 01:00:00 1800-0… Fluc… 1000  NULL    819452  SITE2  
+    ## 5 6004           2021-01-01 02:00:00 1800-0… Fluc… 1000  NULL    528071  SITE1  
+    ## 6 6005           2021-01-01 03:00:00 2020-1… Co-a… 1.2   g       1001434 SITE3  
     ## # … with abbreviated variable names ¹​AdmissionDate, ²​DoseUnit, ³​PatientID,
     ## #   ⁴​Location
 
@@ -146,13 +148,9 @@ vignette("daiquiri", package = "daiquiri")
 
 ## How to cite this package
 
-Please remember to update the version number to match the version you
-used.
-
-> Quan TP (2022). daiquiri: Data quality reporting for temporal
-> datasets. R package version v1.0.0. Zenodo.
-> <https://doi.org/10.5281/zenodo.6334341>. URL:
-> <https://github.com/ropensci/daiquiri>
+> Quan, T. P., (2022). daiquiri: Data Quality Reporting for Temporal
+> Datasets. Journal of Open Source Software, 7(80), 5034,
+> <https://doi.org/10.21105/joss.05034>
 
 ## Acknowledgements
 

@@ -4,6 +4,13 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
+# show all columns when printing tibbles
+options(tibble.width = Inf)
+
+# restrict threads for CRAN compliance
+dt_threads <- data.table::getDTthreads()
+data.table::setDTthreads(1)
+
 ## -----------------------------------------------------------------------------
 # first, attach the package if you haven't already
 library(daiquiri)
@@ -26,7 +33,7 @@ head(example_prescriptions)
 fts <- field_types(
   PrescriptionID = ft_uniqueidentifier(),
   PrescriptionDate = ft_timepoint(),
-  AdmissionDate = ft_datetime(includes_time = FALSE),
+  AdmissionDate = ft_datetime(includes_time = FALSE, na = "1800-01-01"),
   Drug = ft_freetext(),
   Dose = ft_numeric(),
   DoseUnit = ft_categorical(),
@@ -67,6 +74,33 @@ file.remove(daiq_obj$report_filename)
 #    log_directory = NULL
 #  )
 
+## -----------------------------------------------------------------------------
+fts <- field_types(
+  PrescriptionID = ft_uniqueidentifier(),
+  PrescriptionDate = ft_timepoint(),
+  AdmissionDate = ft_datetime(includes_time = FALSE, na = "1800-01-01"),
+  Drug = ft_freetext(),
+  Dose = ft_numeric(),
+  DoseUnit = ft_categorical(),
+  PatientID = ft_ignore(),
+  Location = ft_strata()
+)
+
+## ---- eval=FALSE--------------------------------------------------------------
+#  daiq_obj <- daiquiri_report(
+#    df = example_prescriptions,
+#    field_types = fts,
+#    override_column_names = FALSE,
+#    na = c("", "NULL"),
+#    dataset_description = "Example prescription data",
+#    aggregation_timeunit = "day",
+#    report_title = "daiquiri data quality report - stratified",
+#    save_directory = ".",
+#    save_filename = "example_prescriptions_report_stratified",
+#    show_progress = TRUE,
+#    log_directory = NULL
+#  )
+
 ## ---- eval=FALSE--------------------------------------------------------------
 #  # load your dataset into a source_data object
 #  prescriptions_source_data <- prepare_data(
@@ -103,4 +137,8 @@ file.remove(daiq_obj$report_filename)
 #    save_directory = ".",
 #    save_filename = "example_prescriptions_byweek"
 #  )
+
+## ---- include = FALSE---------------------------------------------------------
+# restore thread setting
+data.table::setDTthreads(dt_threads)
 

@@ -66,6 +66,41 @@ field_types <- function(...) {
         )
       )
   }
+  is_strata <- vapply(fts, is_ft_strata, logical(1))
+  if (sum(is_strata) > 1) {
+    err_validation <-
+      append(
+        err_validation,
+        paste(
+          "Only one strata field allowed. Strata fields currently specified in positions: [",
+          paste(which(is_strata), collapse = ", "),
+          "]",
+          "names: [",
+          paste(names(fts)[which(is_strata)], collapse = ", "),
+          "]"
+        )
+      )
+  }
+  is_aggregate_by_each_category <- is_field_type
+  is_aggregate_by_each_category[is_field_type] <-
+    vapply(fts[is_field_type],
+           FUN = field_type_has_option,
+           FUN.VALUE = logical(1),
+           option = "aggregate_by_each_category")
+  if (any(is_strata) && any(is_aggregate_by_each_category)) {
+    err_validation <-
+      append(
+        err_validation,
+        paste(
+          "Cannot use aggregate_by_each_category option when there is a strata field. Option currently specified in positions: [",
+          paste(which(is_aggregate_by_each_category), collapse = ", "),
+          "]",
+          "names: [",
+          paste(names(fts)[which(is_aggregate_by_each_category)], collapse = ", "),
+          "]"
+        )
+      )
+  }
   if (anyDuplicated(names(fts)) > 0) {
     err_validation <-
       append(
@@ -197,15 +232,18 @@ NULL
 #'   field level, using [readr::col_datetime()] format specifications, e.g.
 #'   `format = "%d/%m/%Y"`. When a format is supplied, it must match the
 #'   complete string.
+#' @param na Column-specific vector of strings that should be interpreted as missing
+#'   values (in addition to those specified at dataset level)
 #' @rdname field_types_available
 #' @export
 ft_timepoint <- function(includes_time = TRUE,
-                         format = "") {
+                         format = "",
+                         na = NULL) {
   # NOTE: nonconformant values appear in validation warnings
-  agg_fun <- c("n")
+  aggregation_functions <- c("n")
   options <- NULL
   if (includes_time) {
-    agg_fun <- c(agg_fun, "midnight_n", "midnight_perc")
+    aggregation_functions <- c(aggregation_functions, "midnight_n", "midnight_perc")
     # TODO: can probably do something more sophisticated here with match.call()
     options <- "includes_time"
   }
@@ -213,7 +251,8 @@ ft_timepoint <- function(includes_time = TRUE,
     type = "timepoint",
     collector = readr::col_datetime(format = format),
     data_class = "POSIXct",
-    aggregation_functions = agg_fun,
+    aggregation_functions = aggregation_functions,
+    na = na,
     options = options
   )
 }
@@ -221,9 +260,11 @@ ft_timepoint <- function(includes_time = TRUE,
 #' @section Details: `ft_uniqueidentifier()` - identifies data fields which
 #'   contain a (usually computer-generated) identifier for an entity, e.g. a
 #'   patient. It does not need to be unique within the dataset.
+#' @param na Column-specific vector of strings that should be interpreted as missing
+#'   values (in addition to those specified at dataset level)
 #' @rdname field_types_available
 #' @export
-ft_uniqueidentifier <- function() {
+ft_uniqueidentifier <- function(na = NULL) {
   # TODO: potential additional aggregation_functions:
   # proportion numeric; distinct first chars
   field_type(
@@ -237,7 +278,8 @@ ft_uniqueidentifier <- function() {
       "min_length",
       "max_length",
       "mean_length"
-    )
+    ),
+    na = na
   )
 }
 
@@ -247,15 +289,19 @@ ft_uniqueidentifier <- function() {
 #'   generated for each distinct subcategory as well as for the field overall.
 #'   If `FALSE`, aggregated values will only be generated for the field overall.
 #'   Default = `FALSE`
+#' @param na Column-specific vector of strings that should be interpreted as missing
+#'   values (in addition to those specified at dataset level)
 #' @rdname field_types_available
 #' @export
-ft_categorical <- function(aggregate_by_each_category = FALSE) {
+ft_categorical <- function(aggregate_by_each_category = FALSE,
+                           na = NULL) {
   # TODO: allow more options for aggregate_by_each_category,
   # e.g. topx (bysize), or accept a vector of values
-  agg_fun <- c("n", "missing_n", "missing_perc", "distinct")
+  # TODO: replace aggregate_by_each_category with split_by_subcategory and only keep facetted tab?
+  aggregation_functions <- c("n", "missing_n", "missing_perc", "distinct")
   options <- NULL
   if (aggregate_by_each_category) {
-    agg_fun <- c(agg_fun, "subcat_n", "subcat_perc")
+    aggregation_functions <- c(aggregation_functions, "subcat_n", "subcat_perc")
     # TODO: can probably do something more sophisticated here with match.call()
     options <- "aggregate_by_each_category"
   }
@@ -263,7 +309,8 @@ ft_categorical <- function(aggregate_by_each_category = FALSE) {
     type = "categorical",
     collector = readr::col_character(),
     data_class = "character",
-    aggregation_functions = agg_fun,
+    aggregation_functions = aggregation_functions,
+    na = na,
     options = options
   )
 }
@@ -272,9 +319,11 @@ ft_categorical <- function(aggregate_by_each_category = FALSE) {
 #' `ft_numeric()` - identifies data fields which contain numeric values that
 #' should be treated as continuous. Any values which contain non-numeric
 #' characters (including grouping marks) will be classed as non-conformant
+#' @param na Column-specific vector of strings that should be interpreted as missing
+#'   values (in addition to those specified at dataset level)
 #' @rdname field_types_available
 #' @export
-ft_numeric <- function() {
+ft_numeric <- function(na = NULL) {
   field_type(
     type = "numeric",
     collector = readr::col_double(),
@@ -289,7 +338,8 @@ ft_numeric <- function() {
       "max",
       "mean",
       "median"
-    )
+    ),
+    na = na
   )
 }
 
@@ -304,11 +354,14 @@ ft_numeric <- function() {
 #'   field level, using [readr::col_datetime()] format specifications, e.g.
 #'   `format = "%d/%m/%Y"`. When a format is supplied, it must match the
 #'   complete string.
+#' @param na Column-specific vector of strings that should be interpreted as missing
+#'   values (in addition to those specified at dataset level)
 #' @rdname field_types_available
 #' @export
 ft_datetime <- function(includes_time = TRUE,
-                        format = "") {
-  agg_fun <-
+                        format = "",
+                        na = NULL) {
+  aggregation_functions <-
     c(
       "n",
       "missing_n",
@@ -320,7 +373,7 @@ ft_datetime <- function(includes_time = TRUE,
     )
   options <- NULL
   if (includes_time) {
-    agg_fun <- c(agg_fun, "midnight_n", "midnight_perc")
+    aggregation_functions <- c(aggregation_functions, "midnight_n", "midnight_perc")
     # TODO: can probably do something more sophisticated here with match.call()
     options <- "includes_time"
   }
@@ -328,35 +381,58 @@ ft_datetime <- function(includes_time = TRUE,
     type = "datetime",
     collector = readr::col_datetime(format = format),
     data_class = "POSIXct",
-    aggregation_functions = agg_fun,
+    aggregation_functions = aggregation_functions,
+    na = na,
     options = options
   )
 }
 
 #' @section Details: `ft_freetext()` - identifies data fields which contain
 #'   free text values. Only presence/missingness will be evaluated.
+#' @param na Column-specific vector of strings that should be interpreted as missing
+#'   values (in addition to those specified at dataset level)
 #' @rdname field_types_available
 #' @export
-ft_freetext <- function() {
+ft_freetext <- function(na = NULL) {
   field_type(
     type = "freetext",
     collector = readr::col_character(),
     data_class = "character",
-    aggregation_functions = c("n", "missing_n", "missing_perc")
+    aggregation_functions = c("n", "missing_n", "missing_perc"),
+    na = na
   )
 }
 
 #' @section Details: `ft_simple()` - identifies data fields where you only
 #'   want presence/missingness to be evaluated (but which are not necessarily
 #'   free text).
+#' @param na Column-specific vector of strings that should be interpreted as missing
+#'   values (in addition to those specified at dataset level)
 #' @rdname field_types_available
 #' @export
-ft_simple <- function() {
+ft_simple <- function(na = NULL) {
   field_type(
     type = "simple",
     collector = readr::col_character(),
     data_class = "character",
-    aggregation_functions = c("n", "missing_n", "missing_perc")
+    aggregation_functions = c("n", "missing_n", "missing_perc"),
+    na = na
+  )
+}
+
+#' @section Details: `ft_strata()` - identifies a categorical data field which should
+#'   be used to stratify the rest of the data.
+#' @param na Column-specific vector of strings that should be interpreted as missing
+#'   values (in addition to those specified at dataset level)
+#' @rdname field_types_available
+#' @export
+ft_strata <- function(na = NULL) {
+  field_type(
+    type = "strata",
+    collector = readr::col_character(),
+    data_class = "character",
+    aggregation_functions = c("n", "missing_n", "missing_perc", "stratum_n", "stratum_perc"),
+    na = na
   )
 }
 
@@ -434,6 +510,7 @@ field_type <- function(type,
                        collector,
                        data_class,
                        aggregation_functions = c("n", "missing_n", "missing_perc"),
+                       na = NULL,
                        options = NULL) {
   structure(
     list(
@@ -441,6 +518,7 @@ field_type <- function(type,
       collector = collector,
       data_class = data_class,
       aggregation_functions = aggregation_functions,
+      na = na,
       options = options
     ),
     class = c(paste0("daiquiri_field_type_", type), "daiquiri_field_type")
@@ -487,6 +565,13 @@ is_ft_datetime <- function(x) inherits(x, "daiquiri_field_type_datetime")
 #' @return Logical
 #' @noRd
 is_ft_numeric <- function(x) inherits(x, "daiquiri_field_type_numeric")
+
+#' Test if object is a strata field_type
+#'
+#' @param x object to test
+#' @return Logical
+#' @noRd
+is_ft_strata <- function(x) inherits(x, "daiquiri_field_type_strata")
 
 #' Test if object is a calculated field_type
 #'
@@ -538,7 +623,6 @@ field_type_aggregation_functions <- function(field_type) {
 }
 
 
-
 # -----------------------------------------------------------------------------
 #' Convert field_types object to string for printing
 #'
@@ -553,6 +637,12 @@ field_types_to_string <- function(field_types) {
       names(field_types[ft]), "\t",
       "<", field_type_type(field_types[[ft]]), ">"
     )
+    if (!is.null(field_types[[ft]]$na)) {
+      s <- paste0(
+        s, "\t",
+        "na: ", paste(dQuote(field_types[[ft]]$na, q = FALSE), collapse = ", ")
+      )
+    }
     if (!is.null(field_types[[ft]]$options)) {
       s <- paste0(
         s, "\t",
@@ -592,3 +682,31 @@ field_types_to_cols <-
       do.call(readr::cols, lapply(field_types, field_type_collector))
     }
   }
+
+
+# -----------------------------------------------------------------------------
+#' Are any of the fieldtypes ft_strata?
+#'
+#' Used to check if data should be stratified or not
+#'
+#' @param field_types field_types object
+#' @return field_name of ft_strata field if there is one, else NULL
+#' @noRd
+field_types_strata_field_name <- function(field_types) {
+  strata_field_name <- NULL
+  is_strata <- vapply(field_types, is_ft_strata, logical(1))
+  if (any(is_strata)) {
+    strata_field_name <- names(field_types)[is_strata]
+  }
+  strata_field_name
+}
+
+#' Test if field_type has a particular option set
+#'
+#' @param ft field_type to test
+#' @param option name of option
+#' @return Logical
+#' @noRd
+field_type_has_option <- function(ft, option){
+  option %in% ft$options
+}

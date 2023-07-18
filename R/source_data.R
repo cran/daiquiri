@@ -16,7 +16,8 @@
 #'   `field_types`. The specification must therefore contain the columns in the
 #'   correct order. Default = `FALSE`
 #' @param na vector containing strings that should be interpreted as missing
-#'   values, Default = `c("","NA","NULL")`.
+#'   values. Default = `c("","NA","NULL")`. Additional column-specific values
+#'   can be specified in the [field_types()] object
 #' @param dataset_description Short description of the dataset being checked.
 #'   This will appear on the report. If blank, the name of the data frame object
 #'   will be used
@@ -158,6 +159,16 @@ prepare_data <- function(df,
     # update the dt
     changecols <- names(field_types)[dt_datatypes != "character"]
     dt[, (changecols) := lapply(.SD, as.character), .SDcols = changecols]
+  }
+
+  log_message(paste0("Removing column-specific na values..."), show_progress)
+  # remove column-specific na values before checking for non-conformant values
+  for (i in seq_along(field_types)) {
+    current_field <- field_types[[i]]
+    current_field_name <- names(field_types[i])
+    if(!is.null(current_field$na)){
+       dt[get(current_field_name) %in% current_field$na, (current_field_name) := NA]
+    }
   }
 
   log_message(paste0("Checking data against field_types..."), show_progress)
@@ -308,6 +319,15 @@ prepare_data <- function(df,
   )
   names(dfs) <- c(names(field_types), "[DUPLICATES]")
 
+  # get strata info
+  strata_field_name <- field_types_strata_field_name(field_types)
+  if (!is.null(strata_field_name)) {
+    strata_labels <- unique(dfs[[strata_field_name]]$values[[1]])
+    strata_labels <- strata_labels[order(strata_labels)]
+  } else {
+    strata_labels <- NULL
+  }
+
   log_message(paste0("Finished"), show_progress)
 
   log_function_end(match.call()[[1]])
@@ -325,7 +345,9 @@ prepare_data <- function(df,
       cols_imported_indexes = cols_imported_indexes,
       validation_warnings = warnings_summary,
       dataset_description = dataset_description,
-      na_values = na
+      na_values = na,
+      strata_field_name = field_types_strata_field_name(field_types),
+      strata_labels = strata_labels
     ),
     class = "daiquiri_source_data"
   )
@@ -348,6 +370,10 @@ print.daiquiri_source_data <- function(x, ...) {
   cat("Min timepoint value:", summary$overall["timepoint_min"], "\n")
   cat("Max timepoint value:", summary$overall["timepoint_max"], "\n")
   cat("Rows missing timepoint values removed:", summary$overall["timepoint_missing_n"], "\n")
+  if (!is.na(summary$overall["strata_field_name"])) {
+    cat("Column used for strata:", summary$overall["strata_field_name"], "\n")
+    cat("Strata values:", summary$overall["strata_labels"], "\n")
+  }
   cat("Strings interpreted as missing values:", summary$overall["na_values"], "\n")
   cat("Total validation warnings:", sum(summary$validation_warnings$instances), "\n")
   cat("\n")
@@ -404,7 +430,13 @@ summarise_source_data <- function(source_data, show_progress = TRUE) {
     timepoint_min = format(data_field_min(timepoint_field)),
     timepoint_max = format(data_field_max(timepoint_field)),
     timepoint_missing_n = format(source_data$timepoint_missing_n),
-    na_values = paste(dQuote(source_data$na_values, q = FALSE), collapse = ",")
+    if (!is.null(source_data$strata_field_name)) {
+      c(
+        strata_field_name = format(source_data$strata_field_name),
+        strata_labels = paste0(format(source_data$strata_labels), collapse = ", ")
+      )
+    },
+    na_values = summarise_na_values(source_data)
   )
 
   log_message(paste0("  For each column in dataset..."), show_progress)
@@ -468,6 +500,29 @@ summarise_source_data <- function(source_data, show_progress = TRUE) {
   )
 }
 
+#' Consolidate all na strings into single summary string
+#'
+#' @param source_data source_data object
+#'
+#' @return string
+#' @noRd
+summarise_na_values <- function(source_data){
+  na_values <-
+    paste(dQuote(source_data$na_values, q = FALSE), collapse = ",")
+
+  for (f in source_data$data_fields) {
+    if (!is.null(data_field_na(f))) {
+      na_values <-
+        paste0(na_values,
+              "\n ",
+              f$column_name,
+              ": ",
+              paste(dQuote(data_field_na(f), q = FALSE), collapse = ","))
+    }
+  }
+
+  na_values
+}
 
 # -----------------------------------------------------------------------------
 #' Constructor for individual data_fields within source_data object
@@ -608,11 +663,20 @@ data_field_validation_warnings_n <- function(data_field) {
 data_field_count <- function(data_field) {
   data_vals <- data_field$values[[1]]
 
-  if (is_ft_ignore(data_field$field_type) || all(is.na(data_vals))) {
+  if (is_ft_ignore(data_field$field_type)) {
     NA_integer_
   } else {
     sum(!is.na(data_vals))
   }
+}
+
+#' Get na strings specific to the data_field
+#'
+#' @param data_field data_field object
+#' @return vector of strings denoting na values
+#' @noRd
+data_field_na <- function(data_field) {
+  data_field$field_type$na
 }
 
 
