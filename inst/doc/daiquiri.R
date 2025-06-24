@@ -1,4 +1,4 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -41,7 +41,7 @@ fts <- field_types(
   Location = ft_categorical(aggregate_by_each_category = TRUE)
 )
 
-## ---- include=FALSE-----------------------------------------------------------
+## ----include=FALSE------------------------------------------------------------
 # quietly test can create the report from an rmd but show the code in the next chunk in the vignette
 daiq_obj <- daiquiri_report(
   df = example_prescriptions,
@@ -59,20 +59,20 @@ daiq_obj <- daiquiri_report(
 # clean up
 file.remove(daiq_obj$report_filename)
 
-## ---- eval=FALSE--------------------------------------------------------------
-#  daiq_obj <- daiquiri_report(
-#    df = example_prescriptions,
-#    field_types = fts,
-#    override_column_names = FALSE,
-#    na = c("", "NULL"),
-#    dataset_description = "Example prescription data",
-#    aggregation_timeunit = "day",
-#    report_title = "daiquiri data quality report",
-#    save_directory = ".",
-#    save_filename = "example_prescriptions_report",
-#    show_progress = TRUE,
-#    log_directory = NULL
-#  )
+## ----eval=FALSE---------------------------------------------------------------
+# daiq_obj <- daiquiri_report(
+#   df = example_prescriptions,
+#   field_types = fts,
+#   override_column_names = FALSE,
+#   na = c("", "NULL"),
+#   dataset_description = "Example prescription data",
+#   aggregation_timeunit = "day",
+#   report_title = "daiquiri data quality report",
+#   save_directory = ".",
+#   save_filename = "example_prescriptions_report",
+#   show_progress = TRUE,
+#   log_directory = NULL
+# )
 
 ## -----------------------------------------------------------------------------
 fts <- field_types(
@@ -86,59 +86,59 @@ fts <- field_types(
   Location = ft_strata()
 )
 
-## ---- eval=FALSE--------------------------------------------------------------
-#  daiq_obj <- daiquiri_report(
-#    df = example_prescriptions,
-#    field_types = fts,
-#    override_column_names = FALSE,
-#    na = c("", "NULL"),
-#    dataset_description = "Example prescription data",
-#    aggregation_timeunit = "day",
-#    report_title = "daiquiri data quality report - stratified",
-#    save_directory = ".",
-#    save_filename = "example_prescriptions_report_stratified",
-#    show_progress = TRUE,
-#    log_directory = NULL
-#  )
+## ----eval=FALSE---------------------------------------------------------------
+# daiq_obj <- daiquiri_report(
+#   df = example_prescriptions,
+#   field_types = fts,
+#   override_column_names = FALSE,
+#   na = c("", "NULL"),
+#   dataset_description = "Example prescription data",
+#   aggregation_timeunit = "day",
+#   report_title = "daiquiri data quality report - stratified",
+#   save_directory = ".",
+#   save_filename = "example_prescriptions_report_stratified",
+#   show_progress = TRUE,
+#   log_directory = NULL
+# )
 
-## ---- eval=FALSE--------------------------------------------------------------
-#  # load your dataset into a source_data object
-#  prescriptions_source_data <- prepare_data(
-#    example_prescriptions,
-#    fieldtypes = fts,
-#    na = c("", "NULL")
-#  )
-#  
-#  # aggregate the source_data object by desired granularity
-#  prescriptions_byday <- aggregate_data(
-#    prescriptions_source_data,
-#    aggregation_timeunit = "day"
-#  )
-#  
-#  # aggregate the same source_data object by a different granularity
-#  prescriptions_byweek <- aggregate_data(
-#    prescriptions_source_data,
-#    aggregation_timeunit = "week"
-#  )
-#  
-#  # generate and save the reports
-#  report_data(
-#    source_data = prescriptions_source_data,
-#    aggregated_data = prescriptions_byday,
-#    report_title = "Daily prescriptions",
-#    save_directory = ".",
-#    save_filename = "example_prescriptions_byday"
-#  )
-#  
-#  report_data(
-#    source_data = prescriptions_source_data,
-#    aggregated_data = prescriptions_byweek,
-#    report_title = "Weekly prescriptions",
-#    save_directory = ".",
-#    save_filename = "example_prescriptions_byweek"
-#  )
+## ----eval=FALSE---------------------------------------------------------------
+# # load your dataset into a source_data object
+# prescriptions_source_data <- prepare_data(
+#   example_prescriptions,
+#   fieldtypes = fts,
+#   na = c("", "NULL")
+# )
+# 
+# # aggregate the source_data object by desired granularity
+# prescriptions_byday <- aggregate_data(
+#   prescriptions_source_data,
+#   aggregation_timeunit = "day"
+# )
+# 
+# # aggregate the same source_data object by a different granularity
+# prescriptions_byweek <- aggregate_data(
+#   prescriptions_source_data,
+#   aggregation_timeunit = "week"
+# )
+# 
+# # generate and save the reports
+# report_data(
+#   source_data = prescriptions_source_data,
+#   aggregated_data = prescriptions_byday,
+#   report_title = "Daily prescriptions",
+#   save_directory = ".",
+#   save_filename = "example_prescriptions_byday"
+# )
+# 
+# report_data(
+#   source_data = prescriptions_source_data,
+#   aggregated_data = prescriptions_byweek,
+#   report_title = "Weekly prescriptions",
+#   save_directory = ".",
+#   save_filename = "example_prescriptions_byweek"
+# )
 
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 # restore thread setting
 data.table::setDTthreads(dt_threads)
 
